@@ -23,12 +23,16 @@ const indexCliente = async (request, response) => {
             if(error)
                 throw error;
             results?.map(img => {
-                console.log(img)
+                if (img.fotografia)
                 fs.writeFileSync(path.join(__dirname, '../dbimagesClient/' + img.fotografia + getImageType(img.fotografia)), img.fotografia)
             })
             const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesClient/'));
             results?.map((img, index) => {
-                img.fotografia = imagedir[index];
+                try {
+                    img.fotografia = imagedir[index];
+                } catch (err) {
+                    console.log(err)
+                }
             });
             let res = {
                 message: "se obtuvieron correctamente los clientes",
@@ -66,7 +70,7 @@ const getByCliente = async (request, response) => {
 }
 const postCliente = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const {nombre, apellido_P, apellido_M, proposito, edad} = request.body;
     connection.query("INSERT INTO usuario(nombre, apellido_paterno, apellido_materno, proposito, edad, deleted, created_by, created_at) VALUES (?,?,?,?,?,?,?,?) ",
         [nombre, apellido_P, apellido_M, proposito, parseInt(edad), false, idUsuario, new Date()],
@@ -81,7 +85,7 @@ const patchCliente = async (request, response) => {
     const id = request.params.id;
     const updatedFields = request.body;
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const campos = [];
     const valores = [];
 
@@ -112,7 +116,7 @@ const patchCliente = async (request, response) => {
 
 const putCliente = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const id = request.params.id;
     const {nombre, apellido_P, apellido_M, edad} = request.body;
     const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
@@ -129,7 +133,7 @@ const putCliente = async (request, response) => {
 }
 const delCliente = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const id = request.params.id;
     connection.query("UPDATE cliente SET deleted = ?, deleted_by, deleted_at = ? where id_usuarios = ?",
         [true, idUsuario, new Date(),id],

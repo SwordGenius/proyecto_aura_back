@@ -24,12 +24,16 @@ const indexDocumentos = async (request, response) => {
             if(error)
                 throw error;
             results?.map(img => {
-                console.log(img)
-                fs.writeFileSync(path.join(__dirname, '../dbimagesDocument/' + img.fotografia + getImageType(img.fotografia)), img.fotografia)
+                if (img.documento_pdf)
+                fs.writeFileSync(path.join(__dirname, '../dbimagesDocument/' + img.fotografia + getImageType(img.documento_pdf)), img.documento_pdf)
             })
             const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesDocument/'));
             results?.map((img, index) => {
-                img.fotografia = imagedir[index];
+                try {
+                    img.documento_pdf = imagedir[index];
+                } catch (err) {
+                    console.log(err)
+                }
             });
             let res = {
                 message: "se obtuvieron correctamente los documentos",
@@ -68,7 +72,7 @@ const getByDocumento = async (request, response) => {
 }
 const postDocumento = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const {id_cliente, tipo_documento} = request.body;
     const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
     connection.query("INSERT INTO documento( id_cliente, tipo_documento, documento_pdf, deleted, created_by, created_at) VALUES (?,?,?,?,?,?) ",
@@ -82,7 +86,7 @@ const postDocumento = async (request, response) => {
 
 const patchDocumento = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const id = request.params.id;
     const updatedFields = request.body;
     const campos = [];
@@ -115,7 +119,7 @@ const patchDocumento = async (request, response) => {
 
 const putDocumento = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const id = request.params.id;
     const {tipo_documento} = request.body;
     const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
@@ -132,7 +136,7 @@ const putDocumento = async (request, response) => {
 }
 const delDocumento = async (request, response) => {
     const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario._id;
+    const idUsuario = verify(token, process.env.SECRET).usuario.id;
     const id = request.params.id;
     connection.query("UPDATE documento SET deleted = ?, deleted_by, deleted_at = ? where id_usuarios = ?",
         [true, idUsuario, new Date(),id],

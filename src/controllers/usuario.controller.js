@@ -23,12 +23,16 @@ const indexUsuarios = async (request, response) => {
             if(error)
                 throw error;
             results?.map(img => {
-                console.log(img)
+                if (img.fotografia)
                 fs.writeFileSync(path.join(__dirname, '../dbimagesUser/' + img.fotografia + getImageType(img.fotografia)), img.fotografia)
             })
             const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesUser/'));
             results?.map((img, index) => {
-                img.fotografia = imagedir[index];
+                try {
+                    img.fotografia = imagedir[index];
+                } catch (err) {
+                    console.log(err)
+                }
             });
             let res = {
                 message: "se obtuvieron correctamente los usuarios",
