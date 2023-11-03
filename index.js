@@ -12,6 +12,8 @@ app.use(function(req, res, next) {
 });
 
 app.use('/usuarios', usuariosRouter);
+app.use('/clientes', require('./src/routes/clientes.route'));
+app.use('/documentos', require('./src/routes/documentos.route'));
 app.use('/auth', require('./src/routes/auth.route'));
 app.listen(process.env.PORT||3300,() => {
     console.log("Servidor corriendo en el puerto 3300");

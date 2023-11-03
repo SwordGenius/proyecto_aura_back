@@ -67,7 +67,7 @@ const getByUsuario = async (request, response) => {
 const postUsuario = async (request, response) => {
     const {email, password, nombre, apellido_P, apellido_M} = request.body;
     connection.query("INSERT INTO usuario( email, contrasena, nombre, apellido_paterno, apellido_materno, deleted, created_at) VALUES (?,?,?,?,?,?) ",
-        [ email, bcrypt.hashSync(password, process.env.BCRYPT), nombre, apellido_P, apellido_M, false, new Date()],
+        [ email, bcrypt.hashSync(password, parseInt(process.env.BCRYPT)), nombre, apellido_P, apellido_M, false, new Date()],
         (error, results) => {
             if(error)
                 throw error;
