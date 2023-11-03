@@ -4,11 +4,11 @@ const {fileUpload} = require("../helpers/uploads.helper");
 const {verifyAuth} = require("../middlewares/auth.middleware");
 const router = express.Router();
 
-router.get('/',  index);
-router.post('/',  create);
-router.get('/:id', getById);
-router.put('/:id', fileUpload, updateComplete);
-router.patch('/:id', fileUpload, updatePartial);
-router.delete('/:id', delete_logic);
+router.get('/', verifyAuth, index);
+router.post('/', verifyAuth, create);
+router.get('/:id', verifyAuth, getById);
+router.put('/:id', verifyAuth, fileUpload, updateComplete);
+router.patch('/:id', verifyAuth, fileUpload, updatePartial);
+router.delete('/:id', verifyAuth, delete_logic);
 
 module.exports = router;

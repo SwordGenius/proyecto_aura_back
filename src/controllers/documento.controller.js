@@ -1,6 +1,6 @@
 const dotenv = require("dotenv");
 dotenv.config();
-const bcrypt = require('bcrypt');
+
 
 const {connection} = require("../configs/db");
 const fs = require("fs");
