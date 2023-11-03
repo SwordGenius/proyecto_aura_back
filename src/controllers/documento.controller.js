@@ -67,10 +67,12 @@ const getByDocumento = async (request, response) => {
         });
 }
 const postDocumento = async (request, response) => {
+    const token = request.get('aToken');
+    const idUsuario = verify(token, process.env.SECRET).usuario._id;
     const {id_cliente, tipo_documento} = request.body;
     const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
-    connection.query("INSERT INTO documento( id_cliente, tipo_documento, documento_pdf, deleted, created_at) VALUES (?,?,?,?,?) ",
-        [ id_cliente, tipo_documento, data, false, new Date()],
+    connection.query("INSERT INTO documento( id_cliente, tipo_documento, documento_pdf, deleted, created_by, created_at) VALUES (?,?,?,?,?,?) ",
+        [ id_cliente, tipo_documento, data, false, idUsuario, new Date()],
         (error, results) => {
             if(error)
                 throw error;

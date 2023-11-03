@@ -65,9 +65,11 @@ const getByCliente = async (request, response) => {
         });
 }
 const postCliente = async (request, response) => {
+    const token = request.get('aToken');
+    const idUsuario = verify(token, process.env.SECRET).usuario._id;
     const {nombre, apellido_P, apellido_M, proposito, edad} = request.body;
-    connection.query("INSERT INTO usuario(nombre, apellido_paterno, apellido_materno, proposito, edad, deleted, created_at) VALUES (?,?,?,?,?,?,?) ",
-        [nombre, apellido_P, apellido_M, proposito, parseInt(edad), false, new Date()],
+    connection.query("INSERT INTO usuario(nombre, apellido_paterno, apellido_materno, proposito, edad, deleted, created_by, created_at) VALUES (?,?,?,?,?,?,?,?) ",
+        [nombre, apellido_P, apellido_M, proposito, parseInt(edad), false, idUsuario, new Date()],
         (error, results) => {
             if(error)
                 throw error;
