@@ -5,7 +5,7 @@ const {verifyAuth} = require("../middlewares/auth.middleware");
 const router = express.Router();
 
 router.get('/', verifyAuth, index);
-router.post('/', verifyAuth, create);
+router.post('/', create);
 router.get('/:id', verifyAuth, getById);
 router.put('/:id', verifyAuth, fileUpload, updateComplete);
 router.patch('/:id', verifyAuth, fileUpload, updatePartial);

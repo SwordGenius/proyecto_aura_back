@@ -1,5 +1,5 @@
 const express = require('express');
-const {index, create, getById, updateComplete, deleteLogic, update} = require('../controllers/usuario.controller');
+const {index, create, getById, updateComplete, deleteLogic, update} = require('../controllers/historial.controller');
 const {fileUpload} = require("../helpers/uploads.helper");
 const {verifyAuth} = require("../middlewares/auth.middleware");
 const router = express.Router();

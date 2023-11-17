@@ -1,12 +1,22 @@
 const express = require("express");
 const app = express();
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
+
+app.use(cors(
+    {
+        origin: true,
+        credentials: true,
+    }
+))
+
 
 const usuariosRouter = require('./src/routes/usuarios.route');
 app.use(cookieParser());
 app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.header("Access-Control-Allow-Credentials", "true")
     next();
 });
