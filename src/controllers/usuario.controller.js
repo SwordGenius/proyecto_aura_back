@@ -1,144 +1,174 @@
-const dotenv = require("dotenv");
-dotenv.config();
+const Usuario = require('../models/usuario.model');
 const bcrypt = require('bcrypt');
+const {verify} = require("jsonwebtoken");
+const saltosBcrypt = parseInt(process.env.BCRYPT);
 
-const {connection} = require("../configs/db");
-const fs = require("fs");
-const path = require("path");
-const {getImageType} = require("../helpers/image.helper");
+const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        const offset = (page - 1) * limit;
+        const {sort, order} = req.query;
 
-const indexUsuarios = async (request, response) => {
-    const { page, limit } = request.query;
-    const skip = (page - 1) * limit;
-    let query;
-    if (page && limit) {
-        query ="SELECT * FROM usuario WHERE deleted = false LIMIT ?, ?"
+        const usuarios = await Usuario.getAll({offset, limit}, {sort, order});
+
+        let response = {
+            message: "usuarios obtenidos exitosamente",
+            data: usuarios
+        };
+
+        if (page && limit) {
+            const totalUsuarios = await Usuario.count();
+            response = {
+                ...response,
+                total: totalUsuarios,
+                totalPages: Math.ceil(totalUsuarios / limit),
+                currentPage: page
+            };
+        }
+
+        return res.status(200).json(response);
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener los usuarios",
+            error: error.message
+        });
     }
-    else {
-        query ="SELECT * FROM usuario WHERE deleted = false"
-    }
-    connection.query(query,
-        [skip, limit],
-        (error, results) => {
-            if(error)
-                throw error;
-            results?.map(img => {
-                console.log(img)
-                fs.writeFileSync(path.join(__dirname, '../dbimagesUser/' + img.fotografia + getImageType(img.fotografia)), img.fotografia)
-            })
-            const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesUser/'));
-            results?.map((img, index) => {
-                img.fotografia = imagedir[index];
+}
+
+const getById = async (req, res) => {
+    try {
+        const idUsuario = req.params.id;
+        const usuario = await Usuario.getById(idUsuario);
+
+        if (!usuario) {
+            return res.status(404).json({
+                message: `no se encontró el usuario con id ${idUsuario}`
             });
-            let res = {
-                message: "se obtuvieron correctamente los usuarios",
-                data: results
-            }
-            if (page && limit) {
-                const totalUsuarios = results.length;
-                const totalPages = Math.ceil(totalUsuarios / limit);
+        }
 
-                res = {
-                    ...res,
-                    total: totalUsuarios,
-                    totalPages,
-                }
-            }
-
-            return response.status(200).json(res);
+        return res.status(200).json({
+            message: "usuario encontrado exitosamente",
+            usuario
         });
-};
-const getByUsuario = async (request, response) => {
-    const id = request.params.id;
-    connection.query("SELECT * FROM usuario WHERE email = ?",
-        [id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    message: "ocurrió un error al obtener el usuario",
-                    error: error.message
-                });
-            response.status(200).json({
-                message: "se obtuvo el usuario correctamente",
-                results,
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el usuario",
+            error: error.message
+        });
+    }
+}
+const getByCookie = async (req, res) => {
+    try {
+        const token = req.cookies.aToken;
+        const idUsuario = verify(token, process.env.SECRET).usuario._id;
+        const usuario = await Usuario.getById(idUsuario);
+
+        if (!usuario) {
+            return res.status(404).json({
+                message: `no se encontró el usuario con id ${idUsuario}`
             });
+        }
+
+        return res.status(200).json({
+            message: "usuario encontrado exitosamente",
+            usuario
         });
-}
-const postUsuario = async (request, response) => {
-    const {email, password, nombre, apellido_P, apellido_M} = request.body;
-    connection.query("INSERT INTO usuario( email, contrasena, nombre, apellido_paterno, apellido_materno, deleted, created_at) VALUES (?,?,?,?,?,?) ",
-        [ email, bcrypt.hashSync(password, parseInt(process.env.BCRYPT)), nombre, apellido_P, apellido_M, false, new Date()],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item añadido correctamente": results.affectedRows});
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el usuario",
+            error: error.message
         });
-};
-
-const patchUsuario = async (request, response) => {
-    const id = request.params.id;
-    const updatedFields = request.body;
-    const campos = [];
-    const valores = [];
-
-    if (request.file) {
-        campos.push('fotografia = ?');
-        valores.push(fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename)));
     }
-
-    for (const key in updatedFields) {
-        campos.push(`${key} = ?`);
-        valores.push(updatedFields[key]);
-    }
-
-    if (campos.length === 0) {
-        return response.status(400).json({ error: 'No se proporcionaron campos para actualizar.' });
-    }
-    connection.query(`UPDATE usuario SET ${campos.join(',')}, updated_at = ? WHERE id_usuarios = ?`,
-        [...valores, new Date(), id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el usuario",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
-        });
 }
 
-const putUsuarios = async (request, response) => {
-    const id = request.params.id;
-    const {email, password, nombre, apellido_P, apellido_M} = request.body;
-    const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
-    connection.query("UPDATE usuario SET email = ?, contrasena = ?, nombre = ?, apellido_paterno = ?, apellido_materno = ?, fotografia = ?, updated_at = ? WHERE id_usuarios = ?",
-        [email, password, nombre, apellido_P, apellido_M, data, new Date(), id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el usuario",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
+const create = async (req, res) => {
+    try {
+        const usuario = new Usuario({
+            email: req.body.email,
+            password: bcrypt.hashSync(req.body.password, saltosBcrypt),
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
         });
+        await usuario.save()
+        return res.status(200).json({
+            message: "usuario creado exitosamente",
+            usuario
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: "ocurrió un error al crear el usuario",
+            error: error.message
+        });
+    }
 }
-const delUsuario = async (request, response) => {
-    const id = request.params.id;
-    connection.query("UPDATE usuario SET deleted = ?, deleted_at = ? where id_usuarios = ?",
-        [true, new Date(),id],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item eliminado":results.affectedRows});
+
+const deleteLogic = async (req, res) => {
+    try {
+        const idUsuario = req.params.id;
+
+        await Usuario.deleteLogicoById(idUsuario);
+
+        return res.status(200).json({
+            message: "se eliminó el usuario correctamente"
         });
-};
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el usuario",
+            error: error.message
+        })
+    }
+}
 
+const deleteFisico = async (req, res) => {
+    try {
+        const idUsuario = req.params.id;
 
+        await Usuario.deleteFisicoById(idUsuario);
+
+        return res.status(200).json({
+            message: "se eliminó el usuario correctamente"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el usuario",
+            error: error.message
+        })
+    }
+}
+
+const update = async (req, res) => {
+    try {
+        const idUsuario = req.params.id;
+        const datosActualizar = {
+            email: req.body.email,
+            password: bcrypt.hashSync(req.body.password, saltosBcrypt),
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
+            file: req.files.fotografia
+        }
+
+        await Usuario.updateById(idUsuario, datosActualizar);
+
+        return res.status(200).json({
+            message: "el usuario se actualizó correctamente"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al actualizar el usuario",
+            error: error.message
+        })
+    }
+}
 
 module.exports = {
-    index: indexUsuarios,
-    getById: getByUsuario,
-    create: postUsuario,
-    updatePartial: patchUsuario,
-    updateComplete: putUsuarios,
-    delete_logic: delUsuario
-};
+    index,
+    getById,
+    create,
+    deleteLogic,
+    update,
+    getByCookie
+}

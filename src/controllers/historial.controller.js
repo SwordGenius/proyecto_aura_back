@@ -1,4 +1,4 @@
-const Documento = require("../models/documento.model");
+const Historial = require("../models/historial.model");
 const {verify} = require("jsonwebtoken");
 
 const index = async (req, res) => {
@@ -8,19 +8,19 @@ const index = async (req, res) => {
         const offset = (page - 1) * limit;
         const {sort, order} = req.query;
 
-        const documento = await Documento.getAll({offset, limit}, {sort, order});
+        const historial = await Historial.getAll({offset, limit}, {sort, order});
 
         let response = {
-            message: "documento obtenido exitosamente",
-            data: documento
+            message: "historial obtenido exitosamente",
+            data: historial
         };
 
         if (page && limit) {
-            const totalDocumento = await Documento.count();
+            const totalHistorial = await Historial.count();
             response = {
                 ...response,
-                total: totalDocumento,
-                totalPages: Math.ceil(totalDocumento / limit),
+                total: totalHistorial,
+                totalPages: Math.ceil(totalHistorial / limit),
                 currentPage: page
             };
         }
@@ -28,7 +28,7 @@ const index = async (req, res) => {
         return res.status(200).json(response);
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al obtener el documento",
+            message: "ocurrió un error al obtener el historial",
             error: error.message
         });
     }
@@ -36,22 +36,22 @@ const index = async (req, res) => {
 
 const getById = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
-        const documento = await Documento.getById(idDocumento);
+        const idHistorial = req.params.id;
+        const historial = await Historial.getById(idHistorial);
 
-        if (!documento) {
+        if (!historial) {
             return res.status(404).json({
-                message: `no se encontró el documento con id ${idDocumento}`
+                message: `no se encontró el historial con id ${idHistorial}`
             });
         }
 
         return res.status(200).json({
-            message: "documento encontrado exitosamente",
-            historial: documento
+            message: "historial encontrado exitosamente",
+            historial
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al obtener el documento",
+            message: "ocurrió un error al obtener el historial",
             error: error.message
         });
     }
@@ -61,22 +61,21 @@ const create = async (req, res) => {
     try {
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
-        const documento = new Documento({
-            tipo_documento: req.body.tipo_documento,
-            documento_pdf: req.body.files.documento_pdf,
-            id_usuario: idUsuario,
-            id_cliente: req.body.id_cliente
+        const historial = new Historial({
+            motivo: req.body.motivo,
+            diagnostico: req.body.diagnostico,
+            usuario_id: idUsuario
         });
 
-        await documento.save()
+        await historial.save()
 
         return res.status(200).json({
-            message: "documento creado exitosamente",
-            documento: documento
+            message: "historial creado exitosamente",
+            historial
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al crear el documento",
+            message: "ocurrió un error al crear el historial",
             error: error.message
         });
     }
@@ -84,18 +83,17 @@ const create = async (req, res) => {
 
 const deleteLogic = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idHistorial = req.params.id;
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
-
-        await Documento.deleteLogicoById(idDocumento, idUsuario);
+        await Historial.deleteLogicoById(idHistorial, idUsuario);
 
         return res.status(200).json({
-            message: "se eliminó el documento correctamente"
+            message: "se eliminó el historial correctamente"
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al eliminar el documento",
+            message: "ocurrió un error al eliminar el historial",
             error: error.message
         })
     }
@@ -103,16 +101,16 @@ const deleteLogic = async (req, res) => {
 
 const deleteFisico = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idHistorial = req.params.id;
 
-        await Documento.deleteFisicoById(idDocumento);
+        await Historial.deleteFisicoById(idHistorial);
 
         return res.status(200).json({
-            message: "se eliminó el documento correctamente"
+            message: "se eliminó el historial correctamente"
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al eliminar el documento",
+            message: "ocurrió un error al eliminar el historial",
             error: error.message
         })
     }
@@ -120,23 +118,23 @@ const deleteFisico = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idHistorial = req.params.id;
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
         const datosActualizar = {
-            tipo_documento: req.body.tipo_documento,
-            documento_pdf: req.body.files.documento_pdf,
-            id_usuario: idUsuario
+            motivo: req.body.motivo,
+            diagnostico: req.body.diagnostico,
+            usuario_id: idUsuario
         }
 
-        await Documento.updateById(idDocumento, datosActualizar);
+        await Historial.updateById(idHistorial, datosActualizar);
 
         return res.status(200).json({
-            message: "el documento se actualizó correctamente"
+            message: "el historial se actualizó correctamente"
         })
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al actualizar el documento",
+            message: "ocurrió un error al actualizar el historial",
             error: error.message
         })
     }

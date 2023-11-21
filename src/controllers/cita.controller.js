@@ -1,4 +1,4 @@
-const Documento = require("../models/documento.model");
+const Cita = require("../models/cita.model");
 const {verify} = require("jsonwebtoken");
 
 const index = async (req, res) => {
@@ -8,19 +8,19 @@ const index = async (req, res) => {
         const offset = (page - 1) * limit;
         const {sort, order} = req.query;
 
-        const documento = await Documento.getAll({offset, limit}, {sort, order});
+        const cita = await Cita.getAll({offset, limit}, {sort, order});
 
         let response = {
-            message: "documento obtenido exitosamente",
-            data: documento
+            message: "cita obtenida exitosamente",
+            data: cita
         };
 
         if (page && limit) {
-            const totalDocumento = await Documento.count();
+            const totalCita = await Cita.count();
             response = {
                 ...response,
-                total: totalDocumento,
-                totalPages: Math.ceil(totalDocumento / limit),
+                total: totalCita,
+                totalPages: Math.ceil(totalCita / limit),
                 currentPage: page
             };
         }
@@ -28,7 +28,7 @@ const index = async (req, res) => {
         return res.status(200).json(response);
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al obtener el documento",
+            message: "ocurrió un error al obtener la cita",
             error: error.message
         });
     }
@@ -36,22 +36,22 @@ const index = async (req, res) => {
 
 const getById = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
-        const documento = await Documento.getById(idDocumento);
+        const idCita = req.params.id;
+        const cita = await Cita.getById(idCita);
 
-        if (!documento) {
+        if (!cita) {
             return res.status(404).json({
-                message: `no se encontró el documento con id ${idDocumento}`
+                message: `no se encontró la cita con id ${idCita}`
             });
         }
 
         return res.status(200).json({
-            message: "documento encontrado exitosamente",
-            historial: documento
+            message: "cita encontrada exitosamente",
+            cita: cita
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al obtener el documento",
+            message: "ocurrió un error al obtener la cita",
             error: error.message
         });
     }
@@ -61,22 +61,22 @@ const create = async (req, res) => {
     try {
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
-        const documento = new Documento({
-            tipo_documento: req.body.tipo_documento,
-            documento_pdf: req.body.files.documento_pdf,
+        const cita = new Cita({
+            motivo: req.body.motivo,
+            fecha: req.body.fecha,
             id_usuario: idUsuario,
             id_cliente: req.body.id_cliente
         });
 
-        await documento.save()
+        await cita.save()
 
         return res.status(200).json({
-            message: "documento creado exitosamente",
-            documento: documento
+            message: "cita creada exitosamente",
+            cita: cita
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al crear el documento",
+            message: "ocurrió un error al crear la cita",
             error: error.message
         });
     }
@@ -84,18 +84,18 @@ const create = async (req, res) => {
 
 const deleteLogic = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idCita = req.params.id;
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
 
-        await Documento.deleteLogicoById(idDocumento, idUsuario);
+        await Cita.deleteLogicoById(idCita, idUsuario);
 
         return res.status(200).json({
-            message: "se eliminó el documento correctamente"
+            message: "se eliminó la cita correctamente"
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al eliminar el documento",
+            message: "ocurrió un error al eliminar la cita",
             error: error.message
         })
     }
@@ -103,16 +103,16 @@ const deleteLogic = async (req, res) => {
 
 const deleteFisico = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idCita = req.params.id;
 
-        await Documento.deleteFisicoById(idDocumento);
+        await Cita.deleteFisicoById(idCita);
 
         return res.status(200).json({
-            message: "se eliminó el documento correctamente"
+            message: "se eliminó la cita correctamente"
         });
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al eliminar el documento",
+            message: "ocurrió un error al eliminar la cita",
             error: error.message
         })
     }
@@ -120,23 +120,23 @@ const deleteFisico = async (req, res) => {
 
 const update = async (req, res) => {
     try {
-        const idDocumento = req.params.id;
+        const idCita = req.params.id;
         const token = req.get('aToken');
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
         const datosActualizar = {
-            tipo_documento: req.body.tipo_documento,
-            documento_pdf: req.body.files.documento_pdf,
+            motivo: req.body.motivo,
+            fecha: req.body.fecha,
             id_usuario: idUsuario
         }
 
-        await Documento.updateById(idDocumento, datosActualizar);
+        await Cita.updateById(idCita, datosActualizar);
 
         return res.status(200).json({
-            message: "el documento se actualizó correctamente"
+            message: "la cita se actualizó correctamente"
         })
     } catch (error) {
         return res.status(500).json({
-            message: "ocurrió un error al actualizar el documento",
+            message: "ocurrió un error al actualizar la cita",
             error: error.message
         })
     }

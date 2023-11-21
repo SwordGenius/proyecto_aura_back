@@ -1,14 +1,14 @@
 const express = require('express');
-const {index, create, getById, updateComplete, delete_logic , updatePartial} = require('../controllers/usuario.controller');
-const {fileUpload} = require("../helpers/uploads.helper");
+const {index, create, getById, getByCookie, deleteLogic, update} = require('../controllers/usuario.controller');
+const fileUpload = require("express-fileupload");
 const {verifyAuth} = require("../middlewares/auth.middleware");
 const router = express.Router();
 
-router.get('/', verifyAuth, index);
-router.post('/', verifyAuth, create);
-router.get('/:id', verifyAuth, getById);
-router.put('/:id', verifyAuth, fileUpload, updateComplete);
-router.patch('/:id', verifyAuth, fileUpload, updatePartial);
-router.delete('/:id', verifyAuth, delete_logic);
+router.get('/', index);
+router.post('/', create);
+router.get('/:id', getById);
+router.get('/cookie' ,getByCookie);
+router.patch('/:id', verifyAuth, fileUpload({useTempFiles: true, tempFileDir: './uploads'}), update);
+router.delete('/:id', verifyAuth, deleteLogic);
 
 module.exports = router;
