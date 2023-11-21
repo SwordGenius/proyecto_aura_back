@@ -1,5 +1,6 @@
 const Usuario = require('../models/usuario.model');
 const bcrypt = require('bcrypt');
+const {verify} = require("jsonwebtoken");
 const saltosBcrypt = parseInt(process.env.BCRYPT);
 
 const index = async (req, res) => {
@@ -57,22 +58,46 @@ const getById = async (req, res) => {
         });
     }
 }
+const getByCookie = async (req, res) => {
+    try {
+        const token = req.cookies.aToken;
+        const idUsuario = verify(token, process.env.SECRET).usuario._id;
+        const usuario = await Usuario.getById(idUsuario);
+
+        if (!usuario) {
+            return res.status(404).json({
+                message: `no se encontró el usuario con id ${idUsuario}`
+            });
+        }
+
+        return res.status(200).json({
+            message: "usuario encontrado exitosamente",
+            usuario
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el usuario",
+            error: error.message
+        });
+    }
+}
 
 const create = async (req, res) => {
     try {
         const usuario = new Usuario({
             email: req.body.email,
             password: bcrypt.hashSync(req.body.password, saltosBcrypt),
-            nombre: req.body.nombre
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
         });
-
         await usuario.save()
-
         return res.status(200).json({
             message: "usuario creado exitosamente",
             usuario
         });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({
             message: "ocurrió un error al crear el usuario",
             error: error.message
@@ -119,8 +144,11 @@ const update = async (req, res) => {
         const idUsuario = req.params.id;
         const datosActualizar = {
             email: req.body.email,
-            password: req.body.password,
-            nombre: req.body.nombre
+            password: bcrypt.hashSync(req.body.password, saltosBcrypt),
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
+            file: req.files.fotografia
         }
 
         await Usuario.updateById(idUsuario, datosActualizar);
@@ -141,5 +169,6 @@ module.exports = {
     getById,
     create,
     deleteLogic,
-    update
+    update,
+    getByCookie
 }

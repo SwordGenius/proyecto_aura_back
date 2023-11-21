@@ -16,11 +16,15 @@
     "nodemon": "^3.0.1"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.454.0",
+    "@aws-sdk/credential-provider-env": "^3.451.0",
+    "@aws-sdk/s3-request-presigner": "^3.454.0",
     "bcrypt": "^5.1.1",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.6",
     "cookieparser": "^0.1.0",
     "cors": "^2.8.5",
+    "express-fileupload": "^1.4.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.3"

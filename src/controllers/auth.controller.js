@@ -10,6 +10,7 @@ const loginAuth = async (req, res) => {
             [email], async (error, results) => {
                 if (error)
                     throw error;
+                console.log(results);
                 if (!results) {
                     return res.status(200).json({
                         message: "email o contraseña incorrecta"
@@ -25,7 +26,6 @@ const loginAuth = async (req, res) => {
                         message: "email o contraseña incorrecta"
                     });
                 }
-                console.log(results[0].id_usuario);
                 const payload = {
                     usuario: {
                         _id: results[0].id_usuario
@@ -33,19 +33,13 @@ const loginAuth = async (req, res) => {
                 }
 
                 const token = jwt.sign(payload, process.env.SECRET, {expiresIn: '1h'});
-                console.log(token);
                 const serialized = serialize('aToken', token, {
                     sameSite: 'none',
                     maxAge: 60 * 60 * 1000,
                     path: '/',
                 })
-                console.log(serialized);
                 res.setHeader("Set-Cookie", serialized);
                 res.cookie(serialized);
-                res.json({
-                    message: "logueado correctamente",
-                    token,
-                });
                 res.send();
             })
 

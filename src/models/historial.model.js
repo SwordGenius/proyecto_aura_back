@@ -1,9 +1,10 @@
 const db = require('../configs/db.config');
 class Historial {
 
-    constructor({ id, idCliente, motivo, diagnostico, deleted, createdAt, updatedAt, deletedAt, createdBy, updatedBy, deletedBy }) {
+    constructor({ id, idCliente, motivo, diagnostico, deleted, createdAt, updatedAt, deletedAt, createdBy, updatedBy, deletedBy }, usuario_id) {
         this.id = id;
-        this.idCLiente = idCliente;
+        this.usuario_id = usuario_id;
+        this.idCliente = idCliente;
         this.motivo = motivo;
         this.diagnostico = diagnostico;
         this.deleted = deleted;
@@ -46,11 +47,11 @@ class Historial {
         return null;
     }
 
-    static async deleteLogicoById(id) {
+    static async deleteLogicoById(id, usuario_id){
         const connection = await db.createConnection();
 
         const deletedAt = new Date();
-        const [result] = connection.execute("UPDATE historial SET deleted = 1, deleted_at = ? WHERE id_historial = ?", [deletedAt, id]);
+        const [result] = connection.execute("UPDATE historial SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_historial = ?", [deletedAt, usuario_id, id]);
 
         connection.end();
 
@@ -73,11 +74,11 @@ class Historial {
         return result
     }
 
-    static async updateById(id, { motivo, diagnostico }) {
+    static async updateById(id, { motivo, diagnostico, usuario_id }) {
         const connection = await db.createConnection();
 
         const updatedAt = new Date();
-        const [result] = await connection.execute("UPDATE historial SET motivo = ?, didagnostico = ?, updated_at = ? WHERE id_historial = ?", [motivo, diagnostico, updatedAt, id]);
+        const [result] = await connection.execute("UPDATE historial SET motivo = ?, didagnostico = ?, updated_at = ?, updated_by = ? WHERE id_historial = ?", [motivo, diagnostico, updatedAt, usuario_id, id]);
 
         if (result.affectedRows == 0) {
             throw new Error("no se actualizó el usuario");
@@ -98,17 +99,17 @@ class Historial {
         const connection = await db.createConnection();
 
         const createdAt = new Date();
-        const [result] = await connection.execute("INSERT INTO historial (motivo, diagnostico) VALUES (?, ?)", [this.motivo, this.diagnostico]);
+        const [result] = await connection.execute("INSERT INTO historial (id_cliente ,motivo, diagnostico, created_by) VALUES (?, ?, ?, ?)", [this.idCliente, this.motivo, this.diagnostico, this.usuario_id]);
 
         connection.end();
 
         if (result.insertId === 0) {
-            throw new Error("No se insertó el usuario");
+            throw new Error("No se insertó el historial");
         }
 
         this.id = result.insertId;
         this.deleted = 0;
-        this.createdAt = createdAt;
+        this.createdAt = new Date()
         this.updatedAt = null;
         this.deletedAt = null;
 

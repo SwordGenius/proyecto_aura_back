@@ -1,4 +1,5 @@
 const Historial = require("../models/historial.model");
+const {verify} = require("jsonwebtoken");
 
 const index = async (req, res) => {
     try {
@@ -58,9 +59,12 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     try {
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
         const historial = new Historial({
             motivo: req.body.motivo,
-            diagnostico: req.body.diagnostico
+            diagnostico: req.body.diagnostico,
+            usuario_id: idUsuario
         });
 
         await historial.save()
@@ -80,8 +84,9 @@ const create = async (req, res) => {
 const deleteLogic = async (req, res) => {
     try {
         const idHistorial = req.params.id;
-
-        await Historial.deleteLogicoById(idHistorial);
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        await Historial.deleteLogicoById(idHistorial, idUsuario);
 
         return res.status(200).json({
             message: "se eliminó el historial correctamente"
@@ -114,9 +119,12 @@ const deleteFisico = async (req, res) => {
 const update = async (req, res) => {
     try {
         const idHistorial = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
         const datosActualizar = {
             motivo: req.body.motivo,
-            diagnostico: req.body.diagnostico
+            diagnostico: req.body.diagnostico,
+            usuario_id: idUsuario
         }
 
         await Historial.updateById(idHistorial, datosActualizar);

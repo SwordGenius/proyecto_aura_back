@@ -1,159 +1,150 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
-
-const {connection} = require("../configs/db");
-const fs = require("fs");
-const path = require("path");
-const {getImageType} = require("../helpers/image.helper");
+const Documento = require("../models/documento.model");
 const {verify} = require("jsonwebtoken");
 
-const indexDocumentos = async (request, response) => {
-    const { page, limit } = request.query;
-    const skip = (page - 1) * limit;
-    let query;
-    if (page && limit) {
-        query ="SELECT * FROM documento WHERE deleted = false LIMIT ?, ?"
+const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        const offset = (page - 1) * limit;
+        const {sort, order} = req.query;
+
+        const documento = await Documento.getAll({offset, limit}, {sort, order});
+
+        let response = {
+            message: "documento obtenido exitosamente",
+            data: documento
+        };
+
+        if (page && limit) {
+            const totalDocumento = await Documento.count();
+            response = {
+                ...response,
+                total: totalDocumento,
+                totalPages: Math.ceil(totalDocumento / limit),
+                currentPage: page
+            };
+        }
+
+        return res.status(200).json(response);
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el documento",
+            error: error.message
+        });
     }
-    else {
-        query ="SELECT * FROM documento WHERE deleted = false"
-    }
-    connection.query(query,
-        [skip, limit],
-        (error, results) => {
-            if(error)
-                throw error;
-            results?.map(img => {
-                if (img.documento_pdf)
-                fs.writeFileSync(path.join(__dirname, '../dbimagesDocument/' + img.fotografia + getImageType(img.documento_pdf)), img.documento_pdf)
-            })
-            const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesDocument/'));
-            results?.map((img, index) => {
-                try {
-                    img.documento_pdf = imagedir[index];
-                } catch (err) {
-                    console.log(err)
-                }
+}
+
+const getById = async (req, res) => {
+    try {
+        const idDocumento = req.params.id;
+        const documento = await Documento.getById(idDocumento);
+
+        if (!documento) {
+            return res.status(404).json({
+                message: `no se encontró el documento con id ${idDocumento}`
             });
-            let res = {
-                message: "se obtuvieron correctamente los documentos",
-                data: results
-            }
+        }
 
-            if (page && limit) {
-                const totalDocumentos = results.length;
-                const totalPages = Math.ceil(totalDocumentos / limit);
-
-                res = {
-                    ...res,
-                    total: totalDocumentos,
-                    totalPages,
-                }
-            }
-
-            return response.status(200).json(res);
+        return res.status(200).json({
+            message: "documento encontrado exitosamente",
+            historial: documento
         });
-};
-const getByDocumento = async (request, response) => {
-    const id = request.params.id;
-    connection.query("SELECT * FROM documento WHERE email = ?",
-        [id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    message: "ocurrió un error al obtener el documento",
-                    error: error.message
-                });
-            response.status(200).json({
-                message: "se obtuvo el documento correctamente",
-                results,
-            });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el documento",
+            error: error.message
         });
-}
-const postDocumento = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const {id_cliente, tipo_documento} = request.body;
-    const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
-    connection.query("INSERT INTO documento( id_cliente, tipo_documento, documento_pdf, deleted, created_by, created_at) VALUES (?,?,?,?,?,?) ",
-        [ id_cliente, tipo_documento, data, false, idUsuario, new Date()],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item añadido correctamente": results.affectedRows});
-        });
-};
-
-const patchDocumento = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const id = request.params.id;
-    const updatedFields = request.body;
-    const campos = [];
-    const valores = [];
-
-    if (request.file) {
-        campos.push('documento_pdf = ?');
-        valores.push(fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename)));
     }
-
-    for (const key in updatedFields) {
-        campos.push(`${key} = ?`);
-        valores.push(updatedFields[key]);
-    }
-
-    if (campos.length === 0) {
-        return response.status(400).json({ error: 'No se proporcionaron campos para actualizar.' });
-    }
-    connection.query(`UPDATE documento SET ${campos.join(',')}, updated_by = ?, updated_at = ? WHERE id_usuarios = ?`,
-        [...valores, idUsuario, new Date(), id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el usuario",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
-        });
 }
 
-const putDocumento = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const id = request.params.id;
-    const {tipo_documento} = request.body;
-    const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
-    connection.query("UPDATE documento SET id_cliente = ?, tipo_documento = ?, documento_pdf = ?, updated_by, updated_at = ? WHERE id_usuarios = ?",
-        [id, tipo_documento, data, idUsuario, new Date(), id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el usuario",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
+const create = async (req, res) => {
+    try {
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        const documento = new Documento({
+            tipo_documento: req.body.tipo_documento,
+            documento_pdf: req.body.files.documento_pdf,
+            id_usuario: idUsuario
         });
+
+        await documento.save()
+
+        return res.status(200).json({
+            message: "documento creado exitosamente",
+            documento: documento
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al crear el documento",
+            error: error.message
+        });
+    }
 }
-const delDocumento = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const id = request.params.id;
-    connection.query("UPDATE documento SET deleted = ?, deleted_by, deleted_at = ? where id_usuarios = ?",
-        [true, idUsuario, new Date(),id],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item eliminado":results.affectedRows});
+
+const deleteLogic = async (req, res) => {
+    try {
+        const idDocumento = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+
+        await Documento.deleteLogicoById(idDocumento, idUsuario);
+
+        return res.status(200).json({
+            message: "se eliminó el documento correctamente"
         });
-};
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el documento",
+            error: error.message
+        })
+    }
+}
 
+const deleteFisico = async (req, res) => {
+    try {
+        const idDocumento = req.params.id;
 
+        await Documento.deleteFisicoById(idDocumento);
+
+        return res.status(200).json({
+            message: "se eliminó el documento correctamente"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el documento",
+            error: error.message
+        })
+    }
+}
+
+const update = async (req, res) => {
+    try {
+        const idDocumento = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        const datosActualizar = {
+            tipo_documento: req.body.tipo_documento,
+            documento_pdf: req.body.files.documento_pdf,
+            id_usuario: idUsuario
+        }
+
+        await Documento.updateById(idDocumento, datosActualizar);
+
+        return res.status(200).json({
+            message: "el documento se actualizó correctamente"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al actualizar el documento",
+            error: error.message
+        })
+    }
+}
 
 module.exports = {
-    index: indexDocumentos,
-    getById: getByDocumento,
-    create: postDocumento,
-    updatePartial: patchDocumento,
-    updateComplete: putDocumento,
-    delete_logic: delDocumento
-};
+    index,
+    getById,
+    create,
+    deleteLogic,
+    update
+}

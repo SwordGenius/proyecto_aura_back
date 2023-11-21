@@ -4,6 +4,7 @@ dotenv.config()
 
 const verifyAuth = (req, res, next) => {
     try {
+        console.log("bandera1");
         const token = req.get('aToken');
         jwt.verify(token, process.env.SECRET, (err, decode) => {
             if (err) {
@@ -12,7 +13,7 @@ const verifyAuth = (req, res, next) => {
                     error: err.message
                 });
             }
-
+            console.log("bandera");
             req.usuario = decode.usuario;
             next();
         });

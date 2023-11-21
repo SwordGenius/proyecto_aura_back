@@ -1,158 +1,154 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
-const {connection} = require("../configs/db");
-const fs = require("fs");
-const path = require("path");
-const {getImageType} = require("../helpers/image.helper");
+const Cliente = require("../models/cliente.model");
 const {verify} = require("jsonwebtoken");
 
-const indexCliente = async (request, response) => {
-    const { page, limit } = request.query;
-    const skip = (page - 1) * limit;
-    let query;
-    if (page && limit) {
-        query ="SELECT * FROM cliente WHERE deleted = false LIMIT ?, ?"
+const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        const offset = (page - 1) * limit;
+        const {sort, order} = req.query;
+
+        const cliente = await Cliente.getAll({offset, limit}, {sort, order});
+        let response = {
+            message: "cliente obtenido exitosamente",
+            data: cliente
+        };
+
+        if (page && limit) {
+            const totalCliente = await Cliente.count();
+            response = {
+                ...response,
+                total: totalCliente,
+                totalPages: Math.ceil(totalCliente / limit),
+                currentPage: page
+            };
+        }
+
+        return res.status(200).json(response);
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el cliente",
+            error: error.message
+        });
     }
-    else {
-        query ="SELECT * FROM cliente WHERE deleted = false"
-    }
-    connection.query(query,
-        [skip, limit],
-        (error, results) => {
-            if(error)
-                throw error;
-            results?.map(img => {
-                if (img.fotografia)
-                fs.writeFileSync(path.join(__dirname, '../dbimagesClient/' + img.fotografia + getImageType(img.fotografia)), img.fotografia)
-            })
-            const imagedir = fs.readdirSync(path.join(__dirname, '../dbimagesClient/'));
-            results?.map((img, index) => {
-                try {
-                    img.fotografia = imagedir[index];
-                } catch (err) {
-                    console.log(err)
-                }
+}
+
+const getById = async (req, res) => {
+    try {
+        const idCliente = req.params.id;
+        const cliente = await Cliente.getById(idCliente);
+        console.log("bandera 2")
+        if (!cliente) {
+            return res.status(404).json({
+                message: `no se encontró el cliente con id ${idCliente}`
             });
-            let res = {
-                message: "se obtuvieron correctamente los clientes",
-                data: results
-            }
-            if (page && limit) {
-                const totalClientes = results.length;
-                const totalPages = Math.ceil(totalClientes / limit);
-
-                res = {
-                    ...res,
-                    total: totalClientes,
-                    totalPages,
-                }
-            }
-
-            return response.status(200).json(res);
+        }
+        console.log("bandera 3")
+        return res.status(200).json({
+            message: "cliente encontrado exitosamente",
+            cliente: cliente
         });
-};
-const getByCliente = async (request, response) => {
-    const id = request.params.id;
-    connection.query("SELECT * FROM cliente WHERE nombre = ?",
-        [id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    message: "ocurrió un error al obtener el cliente",
-                    error: error.message
-                });
-            response.status(200).json({
-                message: "se obtuvo el cliente correctamente",
-                results,
-            });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al obtener el cliente",
+            error: error.message
         });
-}
-const postCliente = async (request, response) => {
-    //const token = request.cookies.aToken;
-    //console.log(token);
-    //const idUsuario = verify(token, process.env.SECRET);
-
-    const {nombre, apellido_P, apellido_M, edad} = request.body;
-    connection.query("INSERT INTO cliente (nombre, apellido_paterno, apellido_materno, edad, deleted, created_by, created_at) VALUES (?,?,?,?,?,?,?) ",
-        [nombre, apellido_P, apellido_M, parseInt(edad), false, 1, new Date()],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item añadido correctamente": results.affectedRows});
-        });
-};
-
-const patchCliente = async (request, response) => {
-    const id = request.params.id;
-    const updatedFields = request.body;
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const campos = [];
-    const valores = [];
-
-    if (request.file) {
-        campos.push('fotografia = ?');
-        valores.push(fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename)));
     }
-
-    for (const key in updatedFields) {
-        campos.push(`${key} = ?`);
-        valores.push(updatedFields[key]);
-    }
-
-    if (campos.length === 0) {
-        return response.status(400).json({ error: 'No se proporcionaron campos para actualizar.' });
-    }
-    connection.query(`UPDATE cliente SET ${campos.join(',')}, updated_by, updated_at = ? WHERE id_usuarios = ?`,
-        [...valores, idUsuario, new Date(), id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el cliente",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
-        });
 }
 
-const putCliente = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const id = request.params.id;
-    const {nombre, apellido_P, apellido_M, edad} = request.body;
-    const data = fs.readFileSync(path.join(__dirname, '../images/' + request.file.filename))
-    connection.query("UPDATE cliente SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, fotografia = ?, edad = ?, updated_by = ?, updated_at = ?, deleted = ? WHERE id_usuarios = ?",
-        [nombre, apellido_P, apellido_M, data, edad, idUsuario, new Date(), false, id],
-        (error, results) => {
-            if(error)
-                return response.status(500).json({
-                    mensaje: "no se pudo actualizar el cliente",
-                    error: error.message
-                });
-            response.status(201).json({"Item actualizado":results.affectedRows});
+const create = async (req, res) => {
+    try {
+        const token = req.cookies.aToken;
+        const idUsuario = verify(token, process.env.SECRET).usuario._id;
+        const cliente = new Cliente({
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_P,
+            apellido_m: req.body.apellido_M,
+            edad: req.body.edad,
+            id_usuario: idUsuario
         });
+        const id = await cliente.save()
+        return res.status(200).json({
+            message: "cliente creado exitosamente",
+            cliente: cliente,
+            id: id
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al crear el cliente",
+            error: error.message
+        });
+    }
 }
-const delCliente = async (request, response) => {
-    const token = request.get('aToken');
-    const idUsuario = verify(token, process.env.SECRET).usuario.id;
-    const id = request.params.id;
-    connection.query("UPDATE cliente SET deleted = ?, deleted_by, deleted_at = ? where id_usuarios = ?",
-        [true, idUsuario, new Date(),id],
-        (error, results) => {
-            if(error)
-                throw error;
-            response.status(201).json({"Item eliminado":results.affectedRows});
+
+const deleteLogic = async (req, res) => {
+    try {
+        const idCliente = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+
+        await Cliente.deleteLogicoById(idCliente, idUsuario);
+
+        return res.status(200).json({
+            message: "se eliminó el cliente correctamente"
         });
-};
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el cliente",
+            error: error.message
+        })
+    }
+}
 
+const deleteFisico = async (req, res) => {
+    try {
+        const idCliente = req.params.id;
 
+        await Cliente.deleteFisicoById(idCliente);
+
+        return res.status(200).json({
+            message: "se eliminó el cliente correctamente"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al eliminar el cliente",
+            error: error.message
+        })
+    }
+}
+
+const update = async (req, res) => {
+    try {
+        const idCliente = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        const datosActualizar = {
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
+            edad: req.body.edad,
+            notas: req.body.notas,
+            fotografia: req.body.fotografia,
+            id_usuario: idUsuario
+        }
+
+        await Cliente.updateById(idCliente, datosActualizar);
+
+        return res.status(200).json({
+            message: "el cliente se actualizó correctamente"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al actualizar el cliente",
+            error: error.message
+        })
+    }
+}
 
 module.exports = {
-    index: indexCliente,
-    getById: getByCliente,
-    create: postCliente,
-    updatePartial: patchCliente,
-    updateComplete: putCliente,
-    delete_logic: delCliente
-};
+    index,
+    getById,
+    create,
+    deleteLogic,
+    update
+}
