@@ -64,7 +64,8 @@ const create = async (req, res) => {
         const documento = new Documento({
             tipo_documento: req.body.tipo_documento,
             documento_pdf: req.body.files.documento_pdf,
-            id_usuario: idUsuario
+            id_usuario: idUsuario,
+            id_cliente: req.body.id_cliente
         });
 
         await documento.save()
