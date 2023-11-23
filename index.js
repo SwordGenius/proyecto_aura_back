@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
@@ -11,6 +12,7 @@ app.use(cors(
         credentials: true,
     }
 ))
+
 
 
 const usuariosRouter = require('./src/routes/usuarios.route');
@@ -32,4 +34,4 @@ app.listen(process.env.PORT||3300,() => {
     console.log("Servidor corriendo en el puerto 3300");
 });
 
-module.exports = app;
+module.exports = app

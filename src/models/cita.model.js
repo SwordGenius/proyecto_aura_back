@@ -1,4 +1,5 @@
 const db = require('../configs/db.config');
+const pusher = require('../configs/pusher.config');
 
 class Cita {
 
@@ -60,6 +61,9 @@ class Cita {
             throw new Error("No se pudo eliminar la cita");
         }
 
+        await pusher.trigger('citas', 'eliminar', {
+            message: "se eliminó una cita",
+        })
         return result
     }
 
@@ -110,6 +114,9 @@ class Cita {
         this.updatedAt = null;
         this.deletedAt = null;
 
+        await pusher.trigger('citas', 'agregar', {
+            message: "Una cita se ha agregado",
+        })
         return this.id;
     }
 }
