@@ -91,6 +91,35 @@ class Usuario {
 
         return result;
     }
+    static async updatePartialById(id, { email, password, nombre, apellido_p, apellido_m, file }) {
+        const connection = await db.createConnection();
+        const uploaded = await uploadFile(file);
+        if (!uploaded) {
+            throw new Error("No se pudo subir el archivo");
+        }
+        const URL = await getURL(file);
+        const updatedAt = new Date();
+        let query = "UPDATE usuario SET ";
+        if (email) {
+            query += "  email = ?";
+        }
+        if (password) {
+            query += ", password = ?";
+        }
+        if (nombre) {
+            query += ", nombre = ?";
+        }
+        if (apellido_p) {
+
+        }
+        const [result] = await connection.execute("UPDATE usuario SET email = ?, password = ?, nombre = ?, apellido_paterno = ?, apellido_materno = ?, fotografia = ?, updated_at = ? WHERE id_usuario = ?", [email, password, nombre, apellido_p, apellido_m, URL, updatedAt, id]);
+
+        if (result.affectedRows === 0) {
+            throw new Error("no se actualizó el usuario");
+        }
+
+        return result;
+    }
 
     static async count() {
         const connection = await db.createConnection();

@@ -22,10 +22,10 @@ class Cliente {
         this.deletedAt = deletedAt;
     }
 
-    static async getAll({ offset, limit }, { sort, order }) {
+    static async getAll({ offset, limit }, { sort, order }, id) {
         const connection = await db.createConnection();
 
-        let query = "SELECT id_cliente, id_usuario, nombre, apellido_paterno, apellido_materno, notas, fotografia, edad, deleted, created_at, updated_at, deleted_at FROM cliente WHERE deleted = 0";
+        let query = `SELECT id_cliente, id_usuario, nombre, apellido_paterno, apellido_materno, notas, fotografia, edad, deleted, created_at, updated_at, deleted_at FROM cliente WHERE deleted = 0 AND id_usuario = ${id}`;
 
         if (sort && order) {
             query += ` ORDER BY ${sort} ${order}`

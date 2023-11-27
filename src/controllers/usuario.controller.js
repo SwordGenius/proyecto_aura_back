@@ -164,6 +164,31 @@ const update = async (req, res) => {
     }
 }
 
+const updatePartial = async(req, res) => {
+    try {
+        const idUsuario = req.params.id;
+        const datosActualizar = {
+            email: req.body.email,
+            password: bcrypt.hashSync(req.body.password, saltosBcrypt),
+            nombre: req.body.nombre,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
+            file: req.files.fotografia
+        }
+
+        await Usuario.updatePartialById(idUsuario, datosActualizar);
+
+        return res.status(200).json({
+            message: "el usuario se actualizó correctamente"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "ocurrió un error al actualizar el usuario",
+            error: error.message
+        })
+    }
+}
+
 module.exports = {
     index,
     getById,

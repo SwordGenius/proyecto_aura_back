@@ -5,10 +5,12 @@ const index = async (req, res) => {
     try {
         const page = parseInt(req.query.page);
         const limit = parseInt(req.query.limit);
+        const token = req.cookies.aToken;
+        const id = verify(token, process.env.SECRET).usuario._id;
         const offset = (page - 1) * limit;
         const {sort, order} = req.query;
 
-        const cliente = await Cliente.getAll({offset, limit}, {sort, order});
+        const cliente = await Cliente.getAll({offset, limit}, {sort, order}, id);
         let response = {
             message: "cliente obtenido exitosamente",
             data: cliente

@@ -1,7 +1,8 @@
 require('dotenv').config();
-const {connection} = require('../configs/db');
+const db = require('../configs/db.config');
 const bcrypt = require('bcrypt');
 const saltosBcrypt = parseInt(process.env.BCRYPT);
+const connection = await db.createConnection();
 
 const usuarios = [
     { nombre: "nombre1", apellido_P : "apellido_P1", apellido_M : "apellido_P1", email: "email1@gmail.com", password: bcrypt.hashSync('1234', saltosBcrypt) },
@@ -23,7 +24,7 @@ try {
         console.log("usuarios eliminados");
     });
     usuarios.map(usuario => {
-        connection.query("INSERT INTO usuario(nombre, apellido_paterno, apellido_materno, email, contrasena, deleted, created_at) VALUES (?,?,?,?,?,?,?) ",
+        connection.query("INSERT INTO usuario(nombre, apellido_paterno, apellido_materno, email, password, deleted, created_at) VALUES (?,?,?,?,?,?,?) ",
             [usuario.nombre, usuario.apellido_P, usuario.apellido_M, usuario.email, usuario.password, false, new Date()],
             (error, results) => {
                 if(error)

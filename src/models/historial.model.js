@@ -16,9 +16,9 @@ class Historial {
         this.deletedBy = deletedBy;
     }
 
-    static async getAll({ offset, limit }, { sort, order }) {
+    static async getAll({ offset, limit }, { sort, order }, id) {
         const connection = await db.createConnection();
-        let query = "SELECT id_historial, id_cliente, motivo, diagnostico, deleted, created_at, updated_at, deleted_at FROM historial WHERE deleted = 0";
+        let query = `SELECT id_historial, id_cliente, motivo, diagnostico, deleted, created_at, updated_at, deleted_at FROM historial WHERE deleted = 0 AND id_cliente = ${id}`;
 
         if (sort && order) {
             query += ` ORDER BY ${sort} ${order}`
