@@ -1,4 +1,6 @@
 const Cita = require("../models/cita.model");
+const Historial = require("../models/historial.model");
+const db = require("../configs/db.config");
 const {verify} = require("jsonwebtoken");
 
 const index = async (req, res) => {
@@ -142,10 +144,48 @@ const update = async (req, res) => {
     }
 }
 
+const completarCita = async (req, res) => {
+    const connection = await db.createConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const idCita = req.params.id;
+        const token = req.get('aToken');
+        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+
+        await Cita.deleteWithTransaction(connection, idCita, idUsuario);
+
+        const historial = new Historial({
+            id_cliente: req.body.id_cliente,
+            motivo: req.body.motivo,
+            diagnostico: req.body.diagnostico,
+            id_usuario: idUsuario
+        });
+
+        await historial.saveWithTransaction(connection);
+
+        await connection.commit();
+
+        return res.status(200).json({
+            message: "la cita se completó correctamente"
+        })
+    } catch (error) {
+        await connection.rollback();
+
+        return res.status(500).json({
+            message: "ocurrió un error al completar la cita",
+            error: error.message
+        })
+
+    }
+}
+
 module.exports = {
     index,
     getById,
     create,
     deleteLogic,
-    update
+    update,
+    completarCita
 }

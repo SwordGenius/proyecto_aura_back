@@ -5,10 +5,11 @@ const index = async (req, res) => {
     try {
         const page = parseInt(req.query.page);
         const limit = parseInt(req.query.limit);
+        const id = parseInt(req.query.id);
         const offset = (page - 1) * limit;
         const {sort, order} = req.query;
 
-        const documento = await Documento.getAll({offset, limit}, {sort, order});
+        const documento = await Documento.getAll({offset, limit}, {sort, order}, id);
 
         let response = {
             message: "documento obtenido exitosamente",
@@ -59,11 +60,12 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
     try {
-        const token = req.get('aToken');
-        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        const token = req.cookies.aToken;
+        const idUsuario = verify(token, process.env.SECRET).usuario._id;
+
         const documento = new Documento({
             tipo_documento: req.body.tipo_documento,
-            documento_pdf: req.body.files.documento_pdf,
+            documento_pdf: req.files.documento_pdf,
             id_usuario: idUsuario,
             id_cliente: req.body.id_cliente
         });
@@ -121,7 +123,7 @@ const deleteFisico = async (req, res) => {
 const update = async (req, res) => {
     try {
         const idDocumento = req.params.id;
-        const token = req.get('aToken');
+        const token = req.cookies.aToken;
         const idUsuario = verify(token, process.env.SECRET).usuario.id;
         const datosActualizar = {
             tipo_documento: req.body.tipo_documento,

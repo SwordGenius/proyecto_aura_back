@@ -11,7 +11,7 @@ const loginAuth = async (req, res) => {
                 if (error)
                     throw error;
                 console.log(results);
-                if (!results) {
+                if (results.length === 0) {
                     return res.status(200).json({
                         message: "email o contraseña incorrecta"
                     });

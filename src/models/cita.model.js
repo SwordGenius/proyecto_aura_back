@@ -1,4 +1,5 @@
 const db = require('../configs/db.config');
+const pusher = require('../configs/pusher.config');
 
 class Cita {
 
@@ -60,6 +61,9 @@ class Cita {
             throw new Error("No se pudo eliminar la cita");
         }
 
+        await pusher.trigger('citas', 'eliminar', {
+            message: "se eliminó una cita",
+        })
         return result
     }
 
@@ -110,7 +114,20 @@ class Cita {
         this.updatedAt = null;
         this.deletedAt = null;
 
+        await pusher.trigger('citas', 'agregar', {
+            message: "Una cita se ha agregado",
+        })
         return this.id;
+    }
+    static async deleteWithTransaction(connection, id_usuario, id_cita) {
+        const deletedAt = new Date();
+        const [result] = await connection.execute("UPDATE cita SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_cita = ?", [deletedAt, id_usuario, id_cita]);
+
+        if (result.affectedRows === 0) {
+            throw new Error("No se pudo eliminar la cita");
+        }
+
+        return result;
     }
 }
 

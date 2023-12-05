@@ -16,9 +16,9 @@ class Historial {
         this.deletedBy = deletedBy;
     }
 
-    static async getAll({ offset, limit }, { sort, order }) {
+    static async getAll({ offset, limit }, { sort, order }, id) {
         const connection = await db.createConnection();
-        let query = "SELECT id_historial, id_cliente, motivo, diagnostico, deleted, created_at, updated_at, deleted_at FROM historial WHERE deleted = 0";
+        let query = `SELECT id_historial, id_cliente, motivo, diagnostico, deleted, created_at, updated_at, deleted_at FROM historial WHERE deleted = 0 AND id_cliente = ${id}`;
 
         if (sort && order) {
             query += ` ORDER BY ${sort} ${order}`
@@ -114,6 +114,16 @@ class Historial {
         this.deletedAt = null;
 
         return this.id
+    }
+    async saveWithTransaction(connection) {
+        const createdAt = new Date();
+        const [result] = await connection.execute("INSERT INTO historial (id_cliente ,motivo, diagnostico, created_by) VALUES (?, ?, ?, ?)", [this.idCliente, this.motivo, this.diagnostico, this.usuario_id]);
+
+        if (result.insertId === 0) {
+            throw new Error("No se insertó el historial");
+        }
+
+        return result.insertId;
     }
 }
 

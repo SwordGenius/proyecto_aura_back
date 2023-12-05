@@ -22,6 +22,7 @@ const uploadFile = async (file) => {
             throw new Error("No se pudo eliminar el archivo temporal");
         }
     });
+
     return result;
 }
 

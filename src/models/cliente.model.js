@@ -1,5 +1,6 @@
 const db = require('../configs/db.config');
 const {uploadFile, getURL} = require("../helpers/uploads.helper");
+const pusher = require('../configs/pusher.config');
 
 class Cliente {
 
@@ -21,10 +22,10 @@ class Cliente {
         this.deletedAt = deletedAt;
     }
 
-    static async getAll({ offset, limit }, { sort, order }) {
+    static async getAll({ offset, limit }, { sort, order }, id) {
         const connection = await db.createConnection();
 
-        let query = "SELECT id_cliente, id_usuario, nombre, apellido_paterno, apellido_materno, notas, fotografia, edad, deleted, created_at, updated_at, deleted_at FROM cliente WHERE deleted = 0";
+        let query = `SELECT id_cliente, id_usuario, nombre, apellido_paterno, apellido_materno, notas, fotografia, edad, deleted, created_at, updated_at, deleted_at FROM cliente WHERE deleted = 0 AND id_usuario = ${id}`;
 
         if (sort && order) {
             query += ` ORDER BY ${sort} ${order}`
@@ -52,17 +53,20 @@ class Cliente {
     }
 
     static async deleteLogicoById(id, id_usuario){
+        console.log(id, id_usuario);
         const connection = await db.createConnection();
 
         const deletedAt = new Date();
         const [result] = connection.execute("UPDATE cliente SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_cliente = ?", [deletedAt, id_usuario, id]);
-
+        console.log(result)
         connection.end();
 
         if (result.affectedRows === 0) {
             throw new Error("No se pudo eliminar el cliente");
         }
-
+        await pusher.trigger('clientes', 'eliminar', {
+            message: 'Un cliente se ha eliminado'
+        });
         return result
     }
 
@@ -118,6 +122,12 @@ class Cliente {
         this.createdAt = new Date();
         this.updatedAt = null;
         this.deletedAt = null;
+
+
+
+        await pusher.trigger('clientes', 'agregar', {
+            message: 'Un cliente se ha agregado'
+        });
 
         return this.id;
     }

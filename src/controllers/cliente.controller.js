@@ -5,10 +5,12 @@ const index = async (req, res) => {
     try {
         const page = parseInt(req.query.page);
         const limit = parseInt(req.query.limit);
+        const token = req.cookies.aToken;
+        const id = verify(token, process.env.SECRET).usuario._id;
         const offset = (page - 1) * limit;
         const {sort, order} = req.query;
 
-        const cliente = await Cliente.getAll({offset, limit}, {sort, order});
+        const cliente = await Cliente.getAll({offset, limit}, {sort, order}, id);
         let response = {
             message: "cliente obtenido exitosamente",
             data: cliente
@@ -37,13 +39,11 @@ const getById = async (req, res) => {
     try {
         const idCliente = req.params.id;
         const cliente = await Cliente.getById(idCliente);
-        console.log("bandera 2")
         if (!cliente) {
             return res.status(404).json({
                 message: `no se encontró el cliente con id ${idCliente}`
             });
         }
-        console.log("bandera 3")
         return res.status(200).json({
             message: "cliente encontrado exitosamente",
             cliente: cliente
@@ -84,8 +84,12 @@ const create = async (req, res) => {
 const deleteLogic = async (req, res) => {
     try {
         const idCliente = req.params.id;
-        const token = req.get('aToken');
-        const idUsuario = verify(token, process.env.SECRET).usuario.id;
+        console.log(idCliente)
+        const token = req.cookies.aToken;
+        console.log(token)
+        const idUsuario = verify(token, process.env.SECRET).usuario._id;
+        console.log(idUsuario)
+
 
         await Cliente.deleteLogicoById(idCliente, idUsuario);
 

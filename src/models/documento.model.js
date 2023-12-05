@@ -1,9 +1,10 @@
 const db = require('../configs/db.config');
 const {uploadFile, getURL} = require("../helpers/uploads.helper");
+const url = require("url");
 
 class Documento {
 
-    constructor({ id, id_cliente, tipo_documento, documento_pdf, deletedBy, createdBy, updatedBy, deleted, createdAt, updatedAt, deletedAt }, id_usuario) {
+    constructor({ id, id_cliente, id_usuario, tipo_documento, documento_pdf, deletedBy, createdBy, updatedBy, deleted, createdAt, updatedAt, deletedAt }) {
         this.id = id;
         this.id_cliente = id_cliente;
         this.id_usuario = id_usuario;
@@ -18,9 +19,9 @@ class Documento {
         this.deletedAt = deletedAt;
     }
 
-    static async getAll({ offset, limit }, { sort, order }) {
+    static async getAll({ offset, limit }, { sort, order }, id) {
         const connection = await db.createConnection();
-        let query = "SELECT id_documento, id_cliente, tipo_documento, documento_pdf, deleted, created_at, updated_at, deleted_at FROM documento WHERE deleted = 0";
+        let query = `SELECT id_documento, id_cliente, tipo_documento, documento_pdf, deleted, created_at, updated_at, deleted_at FROM documento WHERE deleted = 0 AND id_cliente = ${id}`;
 
         if (sort && order) {
             query += ` ORDER BY ${sort} ${order}`
@@ -107,9 +108,12 @@ class Documento {
         if (!uploaded) {
             throw new Error("No se pudo subir el archivo");
         }
+
         const URL = await getURL(this.documento_pdf);
-        const [result] = await connection.execute("INSERT INTO documento (id_cliente, tipo_documento, documento_pdf, created_by) VALUES (?, ?, ?, ?)", [this.id_cliente ,this.documento_pdf, URL, this.id_usuario]);
+        console.log(this.id_cliente, this.tipo_documento, URL, this.id_usuario)
+        const [result] = await connection.execute("INSERT INTO documento (id_cliente, tipo_documento, documento_pdf, created_by) VALUES (?, ?, ?, ?)", [this.id_cliente ,this.tipo_documento, URL, this.id_usuario]);
         connection.end();
+
 
         if (result.insertId === 0) {
             throw new Error("No se insertó el documento");
