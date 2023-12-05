@@ -115,6 +115,16 @@ class Historial {
 
         return this.id
     }
+    async saveWithTransaction(connection) {
+        const createdAt = new Date();
+        const [result] = await connection.execute("INSERT INTO historial (id_cliente ,motivo, diagnostico, created_by) VALUES (?, ?, ?, ?)", [this.idCliente, this.motivo, this.diagnostico, this.usuario_id]);
+
+        if (result.insertId === 0) {
+            throw new Error("No se insertó el historial");
+        }
+
+        return result.insertId;
+    }
 }
 
 module.exports = Historial;

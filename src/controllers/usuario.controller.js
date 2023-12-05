@@ -105,6 +105,10 @@ const create = async (req, res) => {
     }
 }
 
+const register = async (req, res) => {
+
+}
+
 const deleteLogic = async (req, res) => {
     try {
         const idUsuario = req.params.id;

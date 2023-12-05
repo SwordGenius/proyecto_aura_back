@@ -119,6 +119,16 @@ class Cita {
         })
         return this.id;
     }
+    static async deleteWithTransaction(connection, id_usuario, id_cita) {
+        const deletedAt = new Date();
+        const [result] = await connection.execute("UPDATE cita SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_cita = ?", [deletedAt, id_usuario, id_cita]);
+
+        if (result.affectedRows === 0) {
+            throw new Error("No se pudo eliminar la cita");
+        }
+
+        return result;
+    }
 }
 
 module.exports = Cita;
