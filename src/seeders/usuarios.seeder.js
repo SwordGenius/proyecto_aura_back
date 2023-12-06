@@ -1,8 +1,8 @@
 require('dotenv').config();
-const db = require('../configs/db.config');
+const {connection} = require('../configs/db');
 const bcrypt = require('bcrypt');
 const saltosBcrypt = parseInt(process.env.BCRYPT);
-const connection = await db.createConnection();
+
 
 const usuarios = [
     { nombre: "nombre1", apellido_P : "apellido_P1", apellido_M : "apellido_P1", email: "email1@gmail.com", password: bcrypt.hashSync('1234', saltosBcrypt) },
