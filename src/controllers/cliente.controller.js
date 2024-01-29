@@ -62,8 +62,8 @@ const create = async (req, res) => {
         const idUsuario = verify(token, process.env.SECRET).usuario._id;
         const cliente = new Cliente({
             nombre: req.body.nombre,
-            apellido_p: req.body.apellido_P,
-            apellido_m: req.body.apellido_M,
+            apellido_p: req.body.apellido_p,
+            apellido_m: req.body.apellido_m,
             edad: req.body.edad,
             id_usuario: idUsuario
         });

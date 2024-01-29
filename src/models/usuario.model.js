@@ -52,7 +52,7 @@ class Usuario {
         const connection = await db.createConnection();
 
         const deletedAt = new Date();
-        const [result] = connection.execute("UPDATE usuario SET deleted = 1, deleted_at = ? WHERE id_usuario = ?", [deletedAt, id]);
+        const [result] = await connection.execute("UPDATE usuario SET deleted = 1, deleted_at = ? WHERE id_usuario = ?", [deletedAt, id]);
 
         connection.end();
 

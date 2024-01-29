@@ -51,7 +51,7 @@ class Historial {
         const connection = await db.createConnection();
 
         const deletedAt = new Date();
-        const [result] = connection.execute("UPDATE historial SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_historial = ?", [deletedAt, usuario_id, id]);
+        const [result] = await connection.execute("UPDATE historial SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_historial = ?", [deletedAt, usuario_id, id]);
 
         connection.end();
 

@@ -53,7 +53,7 @@ class Cita {
         const connection = await db.createConnection();
 
         const deletedAt = new Date();
-        const [result] = connection.execute("UPDATE cita SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_cita = ?", [deletedAt, id_usuario, id]);
+        const [result] = await connection.execute("UPDATE cita SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE id_cita = ?", [deletedAt, id_usuario, id]);
 
         connection.end();
 
